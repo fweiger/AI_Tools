@@ -1,11 +1,12 @@
 // 硅基轻享 / SiBionics CGM -> Apple Health
-// iOS Scriptable (free) + Apple Shortcuts (HealthKit write) | v1.0
+// iOS Scriptable (free) + Apple Shortcuts (HealthKit write) | v1.2
 // Input: untouched XLSX exported from 硅基轻享; optional CSV of datetime,glucose
 // Unit: mmol/L. This script NEVER writes to Apple Health; Shortcuts must log each sample.
 // No Internet access, external libraries, uploads or unit conversion needed for SiBionics XLSX.
 // Two modes: 1) file chooser & prepare records; 2) COMMIT\nrecords mark fully imported samples.
 
-const SCRIPT_VERSION = '1.1';
+const SCRIPT_VERSION = '1.2';
+const HEALTH_SHORTCUT_NAME = '硅基血糖写入'; // Exact name of the one-time Shortcuts HealthKit writer.
 const MAX_PER_RUN = 400; // Limit each HealthKit write batch for reliability.
 const FIRST_RUN_TEST = 3; // Safe first-run import; after success subsequent runs use up to 400.
 const LEDGER_NAME = 'sibionics_health_imported_v1.json';
@@ -246,12 +247,19 @@ function getRecords(rows,filename) {
 async function showStandalonePreview(name, totalCount, pendingCount, selection) {
   const preview = selection.slice(0,3).map(([t,v])=>t+'  '+v+' mmol/L').join('\n');
   const alert = new Alert();
-  alert.title = '血糖文件解析成功';
+  alert.title = selection.length ? '血糖文件解析成功' : '没有新的血糖记录';
   alert.message = '文件：'+name+'\n识别记录：'+totalCount+' 条\n尚未登记：'+pendingCount+' 条'
-    +(selection.length ? '\n本批可交给快捷指令：'+selection.length+' 条\n\n样例：\n'+preview : '\n无需新增记录')
-    +'\n\n当前仅预览，还没有写入苹果健康。写入需运行苹果快捷指令。';
+    +(selection.length ? '\n本批可交给快捷指令：'+selection.length+' 条\n\n样例：\n'+preview : '\n这些记录已登记，不会重复导入。')
+    +'\n\n注意：Scriptable 本身不能写入苹果健康，选择写入后将打开苹果快捷指令。';
+  if (selection.length) {
+    alert.addAction('调用苹果健康写入');
+    alert.addAction('仅预览，不写入');
+    alert.addCancelAction('取消');
+    return (await alert.presentAlert()) === 0;
+  }
   alert.addAction('确定');
   await alert.presentAlert();
+  return false;
 }
 async function main() {
   const input=args.shortcutParameter;
@@ -296,10 +304,20 @@ async function main() {
     return false;
   });
   const selected=pending.slice(0, fm.fileExists(ledgerPath)?MAX_PER_RUN:FIRST_RUN_TEST);
-  if(standalone) await showStandalonePreview(name, all.length, pending.length, selected);
-  if(selected.length===0) {Script.setShortcutOutput('EMPTY');Script.complete();return;}
   // ISO-style local wall time: Shortcuts must interpret this text as LOCAL date, not UTC.
-  Script.setShortcutOutput(selected.map(([t,v])=>t+'|'+v).join('\n'));
+  const output = selected.map(([t,v])=>t+'|'+v).join('\n');
+  if(standalone) {
+    const doImport=await showStandalonePreview(name, all.length, pending.length, selected);
+    if(doImport && selected.length) {
+      // The text is passed only on device via clipboard. No network uploads.
+      // Apple officially supports launching a Shortcut with clipboard input.
+      Pasteboard.copy(output);
+      Safari.open('shortcuts://run-shortcut?name='+encodeURIComponent(HEALTH_SHORTCUT_NAME)+'&input=clipboard');
+    }
+    Script.complete();return;
+  }
+  if(selected.length===0) {Script.setShortcutOutput('EMPTY');Script.complete();return;}
+  Script.setShortcutOutput(output);
   Script.complete();
 }
 try {await main();} catch(e) {
