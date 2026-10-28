@@ -247,7 +247,7 @@ function readXlsx(bytes) {
     }
     if(obj.A===undefined || obj.B===undefined || !String(obj.A).trim() || !String(obj.B).trim())
       fail('Excel 第 '+number+' 行缺少时间或血糖值，禁止跳过。');
-    const t=/^\d{4}[/\.\-]/.test(String(obj.A))?String(obj.A):excelDate(obj.A);
+    const t=/^\d{4}[/.\-]/.test(String(obj.A))?String(obj.A):excelDate(obj.A);
     rows.push([t,obj.B]);
   }
   if(!headerFound||!rows.length) fail('Excel 没有有效表头或血糖记录。');
