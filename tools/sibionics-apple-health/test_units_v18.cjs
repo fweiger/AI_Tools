@@ -1,0 +1,21 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const src=fs.readFileSync(process.argv[2],'utf8');
+const cut=src.lastIndexOf('try {await main();}');assert(cut>0);
+const store=new Map();const fm={documentsDirectory:()=>'/local',joinPath:(a,b)=>a+'/'+b,fileExists:p=>store.has(p),readString:p=>store.get(p),writeString:(p,s)=>store.set(p,s),isDirectory:()=>false,remove:p=>store.delete(p)};
+const c={FileManager:{local:()=>fm},console};vm.createContext(c);
+vm.runInContext(src.slice(0,cut)+';globalThis.api={writerValue,verifiedValue,initialState,saveState,loadState,handleCommand,parseCommand};',c);
+const f=c.api;for(let i=1;i<=400;i++){const n=i/10;assert(Math.abs(Number(f.writerValue(n))/18.015588000005408-n)<1e-8);}
+assert(Math.abs(f.verifiedValue('79.27','mg/dL')-4.4)<0.005);
+assert.strictEqual(f.verifiedValue('4.4','mmol/L'),4.4);
+assert.strictEqual(f.verifiedValue('4,4','毫摩尔/升'),4.4);
+assert.throws(()=>f.verifiedValue('4.4','unknown'));
+const token='SIBIONICS-CGM-V18-MGDL|'+('a'.repeat(35));
+let state=f.initialState();state.active={token,rows:[['2030-01-01 10:00:00','4.4']],status:'prepared'};f.saveState(state);
+const rows=f.handleCommand(f.parseCommand('PRECHECK|'+token));assert(rows.endsWith('|79.2685872'));
+assert.throws(()=>f.handleCommand(f.parseCommand('VERIFY|'+token+'|1\n0.24\nmmol/L')));
+assert.throws(()=>f.handleCommand(f.parseCommand('COMMIT|'+token+'|1')));
+f.handleCommand(f.parseCommand('VERIFY|'+token+'|1\n79.2685872\nmg/dL'));
+f.handleCommand(f.parseCommand('COMMIT|'+token+'|1'));
+assert.strictEqual(f.loadState().completed['2030-01-01 10:00:00'],'4.4');
+assert.throws(()=>f.handleCommand(f.parseCommand('PRECHECK|'+token)));
+console.log('PASS: 400 unit round trips; actual JS verify/reject/commit/replay checks. No iPhone execution.');

@@ -1,0 +1,19 @@
+{
+  "version": "1.9",
+  "build_id": "SIBIONICS-19-MMOL-20261028-A",
+  "purpose": "Publish the exact matched v1.9 artifacts previously supplied in chat; no code changes in this publication.",
+  "files": [
+    {
+      "name": "Sibionics_AppleHealth_OneTap1.9.js",
+      "bytes": 23031,
+      "sha256": "e9493b8cbe1a88a47952747623346b0a8c358e38cbf337c18a3ffd49e129bd2b"
+    },
+    {
+      "name": "硅基血糖写入v1.9.shortcut",
+      "bytes": 25025,
+      "sha256": "5eb965b8ba107b620f2143cb6a6dc8a2fc205d1699bd86e557586f386d74fd62"
+    }
+  ],
+  "real_iphone_healthkit_validated": false,
+  "personal_glucose_records_included": false
+}

@@ -1,0 +1,43 @@
+name: Build SiBionics v1.8 unit fix
+on:
+  push:
+    branches: [feat/sibionics-apple-health-importer]
+    paths:
+      - .github/workflows/build-sibionics-v18.yml
+      - tools/sibionics-apple-health/build_v18.py
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Fetch project branch
+        env:
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
+        run: git clone --depth 1 --branch "$BRANCH" "https://github.com/$REPO.git" work
+      - name: Test unit mapping and build signed files
+        working-directory: work
+        run: |
+          python3 - <<'PY'
+          import runpy, urllib.request
+          opener = urllib.request.build_opener()
+          opener.addheaders = [('User-Agent', 'Mozilla/5.0 SiBionicsImporter/1.8')]
+          urllib.request.install_opener(opener)
+          runpy.run_path('tools/sibionics-apple-health/build_v18.py', run_name='__main__')
+          PY
+      - name: Publish generated pair to the same branch
+        working-directory: work
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          set -eu
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tools/sibionics-apple-health/Sibionics_AppleHealth_OneTap1.8.js tools/sibionics-apple-health/硅基血糖写入v1.8.shortcut tools/sibionics-apple-health/Sibionics_v18.source.plist tools/sibionics-apple-health/test_units_v18.cjs tools/sibionics-apple-health/manifest_v18.json
+          git commit -m 'release(health): tested v1.8 pair with explicit units [skip ci]'
+          AUTH=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+          git -c http.https://github.com/.extraheader="AUTHORIZATION: basic $AUTH" push origin "HEAD:$BRANCH"
