@@ -1,6 +1,16 @@
 # 硅基轻享 CGM → Apple 健康
 
-## 首选：原生苹果快捷指令（无需 Scriptable）
+## 现在应使用：XLSX 直导（配合你已安装的 Scriptable 1.2）
+
+**[直接下载苹果原生写入快捷指令「硅基血糖写入.shortcut」](https://raw.githubusercontent.com/fweiger/test/feat/sibionics-apple-health-importer/tools/sibionics-apple-health/%E7%A1%85%E5%9F%BA%E8%A1%80%E7%B3%96%E5%86%99%E5%85%A5.shortcut)**
+
+这个版本专门接收手机上已经安装、并已成功解析 158 条原始 XLSX 血糖数据的 Scriptable `Sibionics_AppleHealth_OneTap1.2`。下载安装后，不需要重新配置 Apple 快捷指令动作、不需要 CSV 转换。
+
+使用：在 Scriptable v1.2 选择原始 XLSX → 点击「调用苹果健康写入」 → 运行「硅基血糖写入」 → 首轮只导入 3 条 → Apple 健康核对成功后再进行剩余批次。快捷指令在成功写入后调用 Scriptable 登记本地去重台账。
+
+[安装与功能详细说明](./XLSX_BRIDGE_SHORTCUT.md)
+
+## 旧方案：纯 CSV 原生快捷指令（本次不需要）
 
 **[下载完整签名 .shortcut 文件](./SiBionics_CSV_AppleHealth.signed.shortcut)**
 
