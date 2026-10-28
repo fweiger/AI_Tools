@@ -1,5 +1,15 @@
 # 硅基轻享 CGM → Apple 健康
 
+## 首选：原生苹果快捷指令（无需 Scriptable）
+
+**[下载完整签名 .shortcut 文件](./SiBionics_CSV_AppleHealth.signed.shortcut)**
+
+[直接下载地址](https://raw.githubusercontent.com/fweiger/test/feat/sibionics-apple-health-importer/tools/sibionics-apple-health/SiBionics_CSV_AppleHealth.signed.shortcut) · [安装与风险说明](./NATIVE_CSV_SHORTCUT.md)
+
+在 iPhone 下载后，从「文件」App 打开并添加到「快捷指令」即可。支持两列 CSV（包含“血糖时间,血糖值”表头），按 mmol/L 写入苹果健康。首次用 3 条测试文件核对日期、单位，不要重复导入同一批。
+
+如果只有 XLSX 原始文件，则使用下方 Scriptable 解析器；这两条路线不要同时导入同一批数据。
+
 免费的 iPhone 导入辅助工具：直接读取 **硅基轻享导出的 XLSX**（也支持两列 CSV），用 Scriptable 解析，最终由 Apple **快捷指令**通过“记录健康样本”写入苹果健康。
 
 > **v1.2 当前方案**：在 Scriptable 中选择原始 XLSX → 点击“调用苹果健康写入” → 自动启动名为 `硅基血糖写入` 的苹果快捷指令。**首次仍需在快捷指令 App 按 [安装说明](./SHORTCUT_SETUP.md) 建立写入动作并授权；尚未完成真实 iPhone 的写入验证。**
