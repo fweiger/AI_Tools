@@ -19,7 +19,14 @@ jobs:
         run: git clone --depth 1 --branch "$BRANCH" "https://github.com/$REPO.git" work
       - name: Test unit mapping and build signed files
         working-directory: work
-        run: python3 tools/sibionics-apple-health/build_v18.py
+        run: |
+          python3 - <<'PY'
+          import runpy, urllib.request
+          opener = urllib.request.build_opener()
+          opener.addheaders = [('User-Agent', 'Mozilla/5.0 SiBionicsImporter/1.8')]
+          urllib.request.install_opener(opener)
+          runpy.run_path('tools/sibionics-apple-health/build_v18.py', run_name='__main__')
+          PY
       - name: Publish generated pair to the same branch
         working-directory: work
         env:
