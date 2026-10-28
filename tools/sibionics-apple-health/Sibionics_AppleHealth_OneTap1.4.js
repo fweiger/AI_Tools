@@ -289,7 +289,13 @@ function parseCommand(input) {
   if(typeof input!=='string') return null;
   if(input==='PING-V14') return {kind:'ping'};
   if(input.startsWith('PRECHECK|')) return {kind:'precheck',token:input.slice(9)};
-  if(input.startsWith('COMMIT|')) return {kind:'commit',token:input.slice(7)};
+  if(input.startsWith('COMMIT|')) {
+    const rest=input.slice(7), cut=rest.lastIndexOf('|');
+    if(cut<0) fail('COMMIT 缺少实际执行行数。');
+    const n=rest.slice(cut+1);
+    if(!/^[1-9]\d*$/.test(n)) fail('COMMIT 的执行行数无效。');
+    return {kind:'commit',token:rest.slice(0,cut),processedCount:Number(n)};
+  }
   return null;
 }
 function validateToken(token) {
@@ -311,6 +317,8 @@ function handleCommand(command) {
     return batch.rows.map(x=>x[0].replace(' ','T')+SOURCE_UTC_OFFSET+'|'+x[1]).join('\n');
   }
   if(command.kind==='commit') {
+    if(command.processedCount!==batch.rows.length)
+      fail('快捷指令处理行数与批次数量不一致，拒绝登记。');
     if(batch.status!=='running')fail('没有经过 PRECHECK 的批次，不能登记为成功。');
     for(const [time,val] of batch.rows) {
       if(Object.prototype.hasOwnProperty.call(s.completed,time) && s.completed[time]!==val)
