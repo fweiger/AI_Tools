@@ -1,0 +1,11 @@
+{
+  "version": "1.8",
+  "source_unit": "mmol/L",
+  "writer_unit": "mg/dL",
+  "factor": 18.01558800000541,
+  "action_count": 19,
+  "native_sample_return_checked": true,
+  "actual_iPhone_write_verified": false,
+  "js_sha256": "78688b4c369cf4ec28a84f842871d1c6457108b6d69bfeef9f8b225cb2cd0c9b",
+  "shortcut_sha256": "7d23ce6c3f8abe5a4d3fa63ee26f1366a34580e20e6eaeb284eb2d4708b23d68"
+}
