@@ -1,5 +1,5 @@
-// SiBionics/硅基轻享 XLSX -> Apple Health, Scriptable v1.5 (unique filenames to avoid Safari/iCloud cache)
-// Exact pairing: native Shortcuts `硅基血糖写入v1.4`.
+// SiBionics/硅基轻享 XLSX -> Apple Health, Scriptable v1.5 (paired with v1.5 native Shortcut)
+// Exact pairing: native Shortcuts `硅基血糖写入v1.5`.
 // Source file stays on iPhone; ONLY a one-use batch token goes to clipboard.
 // The native Shortcut calls PRECHECK before logging any Health samples and
 // COMMIT only after ALL HealthKit actions have returned successfully.
@@ -7,14 +7,13 @@
 // a possibly-written batch automatically (manual Health inspection required).
 
 const SCRIPT_VERSION = '1.5';
-const PATCH_VERSION = '1.5'; // New installed script identity; reuse existing v1.4 state safely.
 const SHORTCUT_NAME = '硅基血糖写入v1.5';
-const PROTOCOL = 'SIBIONICS-CGM-V14';
-const FIRST_BATCH = 3;
-const MAX_PER_BATCH = 200;
+const PROTOCOL = 'SIBIONICS-CGM-V15';
+const MAX_PER_BATCH = 200; // User requested full real XLSX import, up to 200 readings per batch.
 // SiBionics XLSX omits timezone. Source device is treated as mainland China (+08:00).
 // This makes HealthKit absolute timestamps consistent when the iPhone travels across timezones.
 const SOURCE_UTC_OFFSET = '+08:00';
+// Intentionally reuse v1.4 local state to preserve any prior completed measurements and the stranded 3-row batch.
 const STATE_FILE = 'sibionics_health_import_v14_state.json';
 const LEGACY_FILE = 'sibionics_health_imported_v1.json';
 const fm = FileManager.local();
@@ -22,7 +21,7 @@ const statePath = fm.joinPath(fm.documentsDirectory(), STATE_FILE);
 const legacyPath = fm.joinPath(fm.documentsDirectory(), LEGACY_FILE);
 const stateBackupPath = statePath + '.bak';
 const oldTempPath = statePath + '.tmp';
-function fail(message) { throw new Error('硅基血糖 v1.4：' + message); }
+function fail(message) { throw new Error('硅基血糖 v1.5：' + message); }
 function initialState() {
   return {version:2, firstBatchComplete:false, completed:{}, active:null};
 }
@@ -371,21 +370,30 @@ async function alertText(title,body,buttons) {
 }
 async function handleUnfinishedBatch(stage) {
   if(stage.status==='running') {
+    // Old/new running states might correspond to partly-written Health samples.
     const a=new Alert();
-    a.title='上次导入状态不明：已停止自动重试';
-    a.message='上批 '+stage.rows.length+' 条记录已进入写入流程，但没有完整成功回执。\n为了避免重复写入，本程序不会重试。请核对 Apple 健康中的已有记录后再处理。\n批次：'+stage.token;
-    a.addAction('明白');await a.presentAlert();return;
+    a.title='上次导入可能已部分写入：暂停自动导入';
+    a.message='此前 '+stage.rows.length+' 条记录已经进入快捷指令写入流程，但没有完整成功回执。\n请核对 Apple 健康已有记录，程序不会自动重复写入。';
+    a.addAction('明白');await a.presentAlert();return false;
   }
-  const choice=await alertText('发现尚未开始的批次',
-    '准备写入 '+stage.rows.length+' 条，但快捷指令尚未发回开始确认。\n可以重新打开同一批次，或取消尚未开始的批次。',
-    ['重新启动同一批次','取消未开始的批次']);
-  if(choice===0) launchShortcut(stage.token);
-  if(choice===1) {
-    const s=loadState();
-    if(s.active && s.active.token===stage.token && s.active.status==='prepared') {
-      s.active=null;saveState(s);
-    }
-  }
+  if(stage.status!=='prepared') fail('未知的历史批次状态，拒绝清理。');
+  const sameProtocol=typeof stage.token==='string' && stage.token.startsWith(PROTOCOL+'|');
+  const message='发现此前尚未开始的 '+stage.rows.length+' 条待处理记录。\n'
+    +(sameProtocol?'可以重新启动本批，或取消后重新选择原始 Excel。'
+                  :'这是旧版本遗留批次，不能用 v1.5 快捷指令直接执行。请先取消旧批次，再选原始 Excel。')
+    +'\n取消未开始批次不会删除已完成的历史血糖台账。';
+  const options=sameProtocol?['重新启动同一批次','取消未开始批次并选择 Excel']
+                            :['取消旧版待处理批次并选择 Excel'];
+  const choice=await alertText('发现旧的未开始批次',message,options);
+  if(sameProtocol && choice===0){ launchShortcut(stage.token); return false; }
+  const cancelAndContinue=(sameProtocol && choice===1)||(!sameProtocol && choice===0);
+  if(!cancelAndContinue) return false;
+  const latest=loadState();
+  if(!latest.active||latest.active.token!==stage.token||latest.active.status!=='prepared')
+    fail('清理前批次状态发生变化，为避免重复导入已停止。');
+  latest.active=null;
+  saveState(latest);
+  return true; // Reopen XLSX file picker in THIS invocation.
 }
 function launchShortcut(token) {
   Pasteboard.copy(token);
@@ -401,8 +409,12 @@ async function main() {
     Script.complete();return;
   }
   if(input!==null && input!==undefined && input!=='')fail('不支持的快捷指令入参。');
-  const s=loadState();
-  if(s.active){await handleUnfinishedBatch(s.active);Script.complete();return;}
+  let s=loadState();
+  if(s.active){
+    const resumePicker=await handleUnfinishedBatch(s.active);
+    if(!resumePicker){Script.complete();return;}
+    s=loadState(); // State was safely updated; preserve any completed records.
+  }
   let path;
   try {path=await DocumentPicker.openFile();}
   catch(e) {Script.complete();return;} // user cancelled file chooser
@@ -422,7 +434,7 @@ async function main() {
   if(!pending.length){
     const a=new Alert();a.title='没有待导入记录';a.message='已解析 '+all.length+' 条，本地台账均登记完成。';a.addAction('完成');await a.presentAlert();Script.complete();return;
   }
-  const limit=s.firstBatchComplete?MAX_PER_BATCH:FIRST_BATCH;
+  const limit=MAX_PER_BATCH; // Do not force the user through a three-record test on real historical data.
   const rows=pending.slice(0,limit);
   const sample=rows.slice(0,3).map(([t,v])=>t+'  '+v+' mmol/L').join('\n');
   const message='识别 '+all.length+' 条，待导入 '+pending.length+' 条；本批 '+rows.length+' 条。\n'+
