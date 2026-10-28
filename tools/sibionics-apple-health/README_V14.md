@@ -1,3 +1,17 @@
+## iOS 状态文件冲突修复（v1.4.1，2026-10-28）
+
+**已修复 PRECHECK 提示 `sibionics_health_import_v14_state.json.tmp` 无法移动到 Documents（同名项目存在）的错误。**
+
+仅替换同名 JS：[`Sibionics_AppleHealth_OneTap1.4.js`](./Sibionics_AppleHealth_OneTap1.4.js)。**脚本文件名仍为 1.4，内部补丁版本为 1.4.1；原苹果快捷指令「硅基血糖写入v1.4」无需重装**。
+
+修复：删除会因同名而失败的 `FileManager.move(tmp, statePath)`；改用 Scriptable 官方支持的 `writeString(statePath, data)` 覆盖写入，写前保存原状态到 `.bak`，写后比对校验，确认后才清理遗留的 `.tmp`。若主状态缺失但有 `.bak/.tmp`，会停止并避免误认为首次导入。
+
+**异常后的恢复**：这次截屏显示失败于 PRECHECK，健康写入动作还未开始。替换 JS 并重启 Scriptable 后，若显示「发现尚未开始的批次」，可选择「重新启动同一批次」；若显示「上次导入状态不明」，不要重试，先核对 Apple 健康。
+
+本次基于 Scriptable 官方 FileManager API 和原始 XLSX 进行了 13 项离线回归测试，13/13 通过。**真实 iPhone 写入仍需首次 3 条复核。**
+
+---
+
 # 硅基轻享 → Apple 健康（v1.4，配套安装）
 
 > **当前推荐的唯一配对**：Scriptable v1.4 + 苹果快捷指令 v1.4。v1.0～v1.3 均停用，不要混装或重复写入历史数据。
