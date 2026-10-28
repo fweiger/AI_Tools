@@ -1,4 +1,4 @@
-// SiBionics/硅基轻享 XLSX -> Apple Health, Scriptable v1.4
+// SiBionics/硅基轻享 XLSX -> Apple Health, Scriptable v1.4.1 (v1.4 Shortcuts compatible)
 // Exact pairing: native Shortcuts `硅基血糖写入v1.4`.
 // Source file stays on iPhone; ONLY a one-use batch token goes to clipboard.
 // The native Shortcut calls PRECHECK before logging any Health samples and
@@ -7,6 +7,7 @@
 // a possibly-written batch automatically (manual Health inspection required).
 
 const SCRIPT_VERSION = '1.4';
+const PATCH_VERSION = '1.4.1'; // Keep the installed Scriptable script name and v1.4 Shortcuts protocol unchanged.
 const SHORTCUT_NAME = '硅基血糖写入v1.4';
 const PROTOCOL = 'SIBIONICS-CGM-V14';
 const FIRST_BATCH = 3;
@@ -19,12 +20,17 @@ const LEGACY_FILE = 'sibionics_health_imported_v1.json';
 const fm = FileManager.local();
 const statePath = fm.joinPath(fm.documentsDirectory(), STATE_FILE);
 const legacyPath = fm.joinPath(fm.documentsDirectory(), LEGACY_FILE);
+const stateBackupPath = statePath + '.bak';
+const oldTempPath = statePath + '.tmp';
 function fail(message) { throw new Error('硅基血糖 v1.4：' + message); }
 function initialState() {
   return {version:2, firstBatchComplete:false, completed:{}, active:null};
 }
 function loadState() {
   if (!fm.fileExists(statePath)) {
+    // A partial/failed state write is not a fresh installation. Fail closed.
+    if (fm.fileExists(stateBackupPath) || fm.fileExists(oldTempPath))
+      fail('主状态文件缺失，但检测到 .bak/.tmp。不能按首次导入处理；请先核对苹果健康。');
     // Do not silently re-import samples that may have been written by the v1.2/v1.3 tool.
     if (fm.fileExists(legacyPath)) {
       let old;
@@ -45,12 +51,36 @@ function loadState() {
 }
 function saveState(s) {
   s.updatedAt=new Date().toISOString();
-  const tmp=statePath+'.tmp';
-  if(fm.fileExists(tmp)) fm.remove(tmp);
-  fm.writeString(tmp,JSON.stringify(s));
-  // Move replaces destination (Scriptable FileManager.move docs). Avoid an empty
-  // or partially overwritten state if the device interrupts writeString.
-  fm.move(tmp,statePath);
+  const contents=JSON.stringify(s);
+  // iOS actually rejected move(tmp, statePath) when statePath already existed.
+  // Use Scriptable's documented overwriting writeString() instead of move().
+  // Keep the LAST known good version so an interrupted write can be inspected.
+  // Do NOT restore the backup automatically: it may predate HealthKit writes.
+  try {
+    if (fm.fileExists(statePath)) {
+      if (fm.isDirectory(statePath)) fail('状态路径误指向文件夹，停止导入。');
+      const previous=fm.readString(statePath);
+      // Do not overwrite a valid state or backup with data we cannot parse.
+      const parsed=JSON.parse(previous);
+      if (!parsed || parsed.version!==2 || typeof parsed.completed!=='object' ||
+          typeof parsed.firstBatchComplete!=='boolean' || !('active' in parsed))
+        fail('当前状态文件结构异常，拒绝覆盖。');
+      fm.writeString(stateBackupPath, previous);
+      if (fm.readString(stateBackupPath)!==previous)
+        fail('状态备份校验失败，拒绝覆盖主状态。');
+    }
+    fm.writeString(statePath, contents); // Existing destination is overwritten.
+    if (fm.readString(statePath)!==contents)
+      fail('状态写入后校验不一致，拒绝继续。');
+  } catch (e) {
+    fail('状态保存失败，未确认批次状态；禁止继续写入或立即重试。详情：'+String(e.message||e));
+  }
+  // v1.4 move() failure may have left this orphan. Remove it only after
+  // the canonical state file has been successfully verified.
+  try {
+    if (fm.fileExists(oldTempPath) && !fm.isDirectory(oldTempPath))
+      fm.remove(oldTempPath);
+  } catch (_) { /* Noncritical cleanup; canonical file is already verified. */ }
 }
 function newToken() {
   return Date.now().toString(36)+'-'+Array.from({length:6},()=>Math.floor(Math.random()*0x100000000).toString(36).padStart(7,'0')).join('-');
@@ -398,7 +428,7 @@ async function main() {
   const message='识别 '+all.length+' 条，待导入 '+pending.length+' 条；本批 '+rows.length+' 条。\n'+
     (gaps.length?'注意：检测到 '+gaps.length+' 处非 5 分钟间隔（首处：'+gaps[0]+'）。\n':'')+
     '\n'+sample+'\n时间按 UTC+08:00 解释。\n\n确认后自动启动「'+SHORTCUT_NAME+'」。只有整批写入完成后才登记。';
-  const choice=await alertText('硅基血糖 v1.4 · 确认导入',message,['确认导入 → 苹果健康']);
+  const choice=await alertText('硅基血糖 v1.4.1 · 确认导入',message,['确认导入 → 苹果健康']);
   if(choice!==0){Script.complete();return;}
   // Re-read state before staging to guard re-entry from the action extension.
   const latest=loadState();
@@ -416,6 +446,6 @@ catch(e) {
   if(args.shortcutParameter!==null && args.shortcutParameter!==undefined && args.shortcutParameter!=='') {
     console.error(msg);throw e; // Important: Shortcuts action must fail closed on errors.
   }
-  const a=new Alert();a.title='硅基血糖 v1.4：已停止';a.message=msg;a.addAction('确定');await a.presentAlert();
+  const a=new Alert();a.title='硅基血糖 v1.4.1：已停止';a.message=msg;a.addAction('确定');await a.presentAlert();
   Script.complete();
 }
