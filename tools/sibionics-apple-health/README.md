@@ -8,7 +8,15 @@
 - ⏳ **尚未在 iPhone 实测快捷指令写入 HealthKit**。必须先按下述步骤进行小批量核对。
 - ⚠️ 这不是已签名的 `.shortcut` 安装文件，也不是点击 GitHub 就自动获得健康写入权限。首次需要配置快捷指令。
 
-## 安装脚本（只需一次）
+## 最简单的安装：Scriptable 安装包（推荐）
+
+1. 在 iPhone Safari 打开 [Scriptable 安装文件（.scriptable）](https://raw.githubusercontent.com/fweiger/test/feat/sibionics-apple-health-importer/tools/sibionics-apple-health/Sibionics_AppleHealth_OneTap.scriptable)，保存到「文件」App 的下载目录。
+2. 打开「文件」App，找到 `Sibionics_AppleHealth_OneTap.scriptable`，点击「分享」并选择「Scriptable」或「在 Scriptable 中打开」。按提示导入。
+3. 打开 Scriptable 首页，确认出现 `Sibionics_AppleHealth_OneTap` 脚本。此步骤只安装解析器；写入苹果健康仍需按下一节设置快捷指令。
+
+如果分享菜单没有 Scriptable，可改用下述 iCloud 云盘 JS 文件导入方法。
+
+## 安装脚本（JS 备用方法）
 
 1. 安装免费 [Scriptable](https://apps.apple.com/app/scriptable/id1405459188)。
 2. 在 iPhone Safari 打开 [下载解析脚本（GitHub Raw）](https://raw.githubusercontent.com/fweiger/test/feat/sibionics-apple-health-importer/tools/sibionics-apple-health/Sibionics_AppleHealth_OneTap.js)，将 JS 保存到 **文件 App → iCloud 云盘 → Scriptable** 文件夹（若 Scriptable 使用本地文件，也可在 App 中新建脚本并粘贴源码）。
