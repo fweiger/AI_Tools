@@ -1,84 +1,25 @@
 # 硅基轻享 CGM → Apple 健康
 
-## 现在应使用：XLSX 直导（配合你已安装的 Scriptable 1.2）
+## 当前唯一推荐方案：原始 XLSX 一键导入
 
-**[直接下载苹果原生写入快捷指令「硅基血糖写入.shortcut」](https://raw.githubusercontent.com/fweiger/test/feat/sibionics-apple-health-importer/tools/sibionics-apple-health/%E7%A1%85%E5%9F%BA%E8%A1%80%E7%B3%96%E5%86%99%E5%85%A5.shortcut)**
+**[安装「硅基轻享XLSX一键导入」苹果快捷指令](https://raw.githubusercontent.com/fweiger/test/feat/sibionics-apple-health-importer/tools/sibionics-apple-health/%E7%A1%85%E5%9F%BA%E8%BD%BB%E4%BA%ABXLSX%E4%B8%80%E9%94%AE%E5%AF%BC%E5%85%A5.shortcut)**
 
-这个版本专门接收手机上已经安装、并已成功解析 158 条原始 XLSX 血糖数据的 Scriptable `Sibionics_AppleHealth_OneTap1.2`。下载安装后，不需要重新配置 Apple 快捷指令动作、不需要 CSV 转换。
+[完整安装和验证说明](./ONE_ENTRY_INSTALL.md)
 
-使用：在 Scriptable v1.2 选择原始 XLSX → 点击「调用苹果健康写入」 → 运行「硅基血糖写入」 → 首轮只导入 3 条 → Apple 健康核对成功后再进行剩余批次。快捷指令在成功写入后调用 Scriptable 登记本地去重台账。
+**现在手机已安装并成功解析原始 Excel 的 Scriptable 1.2，不需要重新安装或改脚本。**
 
-[安装与功能详细说明](./XLSX_BRIDGE_SHORTCUT.md)
+操作：打开苹果「快捷指令」App → 点击「硅基轻享XLSX一键导入」 → 选择原始 XLSX → 自动调用 Scriptable 解析 → 写入苹果健康（mmol/L）→ 写入完成后登记已导入记录。
 
-## 旧方案：纯 CSV 原生快捷指令（本次不需要）
+无 CSV 转换、剪贴板、Safari URL 跳转或双 App 手动接力。首次仅写入 3 条供核对；在 Apple 健康确认日期、单位、数值无误再继续其余记录。
 
-**[下载完整签名 .shortcut 文件](./SiBionics_CSV_AppleHealth.signed.shortcut)**
+**状态**：已签名且 GitHub 文件 SHA-256 已验证；**尚未在真实 iPhone 上完成 HealthKit 写入验证**。如出现错误，应以实际系统提示排查，不可认为已全部导入。
 
-[直接下载地址](https://raw.githubusercontent.com/fweiger/test/feat/sibionics-apple-health-importer/tools/sibionics-apple-health/SiBionics_CSV_AppleHealth.signed.shortcut) · [安装与风险说明](./NATIVE_CSV_SHORTCUT.md)
+## 历史版本（已停用，请不要混用）
 
-在 iPhone 下载后，从「文件」App 打开并添加到「快捷指令」即可。支持两列 CSV（包含“血糖时间,血糖值”表头），按 mmol/L 写入苹果健康。首次用 3 条测试文件核对日期、单位，不要重复导入同一批。
+- `SiBionics_CSV_AppleHealth.signed.shortcut`：需要 CSV 的旧版本。
+- `硅基血糖写入.shortcut`：从 Scriptable 通过剪贴板和 URL 跳转的旧版本。
+- `Sibionics_AppleHealth_OneTap.scriptable`：在某些 iPhone 上提示 UTI 类型不支持的旧打包格式。
 
-如果只有 XLSX 原始文件，则使用下方 Scriptable 解析器；这两条路线不要同时导入同一批数据。
+当前方案依赖的解析脚本仍是 [`Sibionics_AppleHealth_OneTap.js`](./Sibionics_AppleHealth_OneTap.js)（v1.2），其历史源码和其他文档为排错保留。
 
-免费的 iPhone 导入辅助工具：直接读取 **硅基轻享导出的 XLSX**（也支持两列 CSV），用 Scriptable 解析，最终由 Apple **快捷指令**通过“记录健康样本”写入苹果健康。
-
-> **v1.2 当前方案**：在 Scriptable 中选择原始 XLSX → 点击“调用苹果健康写入” → 自动启动名为 `硅基血糖写入` 的苹果快捷指令。**首次仍需在快捷指令 App 按 [安装说明](./SHORTCUT_SETUP.md) 建立写入动作并授权；尚未完成真实 iPhone 的写入验证。**
-
-## 现在的状态
-
-- ✅ v1.2 已用原始 XLSX 在模拟 Scriptable 环境完成解析、3 条首轮、COMMIT 登记、后续 155 条增量、启动快捷指令 URL 的逻辑测试。
-- ⏳ **尚未在 iPhone 实测快捷指令写入 HealthKit**。必须先按下述步骤进行小批量核对。
-- ⚠️ 这不是已签名的 `.shortcut` 安装文件，也不是点击 GitHub 就自动获得健康写入权限。首次需要配置快捷指令。
-
-## iPhone 安装（推荐用 JS；避免 UTI 不支持错误）
-
-**如果打开 `.scriptable` 时提示 `Cannot open URL / The UTI of the file is not supported`，说明该分享导入在当前 iPhone 上失败。无需重新安装 Scriptable，也不要重试这个文件。改用以下方法。**
-
-1. 在 iPhone Safari 打开 [JavaScript 源码（GitHub）](https://github.com/fweiger/test/blob/feat/sibionics-apple-health-importer/tools/sibionics-apple-health/Sibionics_AppleHealth_OneTap.js)。
-2. 在 GitHub 文件页面使用 `Download raw file` 下载 `.js`；如果显示为文本，Safari 长按 [原始 JS 链接](https://raw.githubusercontent.com/fweiger/test/feat/sibionics-apple-health-importer/tools/sibionics-apple-health/Sibionics_AppleHealth_OneTap.js) 选择「下载链接文件」。
-3. 打开 iPhone **「文件」App → 浏览 → 下载项**；长按 `Sibionics_AppleHealth_OneTap.js` → **移动** → **iCloud 云盘 → Scriptable** 文件夹。是 **移动**，不是「分享 → 在 Scriptable 打开」。
-4. 返回 Scriptable 首页，等待 iCloud 文件同步，出现脚本卡片 `Sibionics_AppleHealth_OneTap`，即安装成功。**不要直接点卡片写入健康**；HealthKit 写入仍需快捷指令。
-5. 如果没有 **iCloud 云盘 → Scriptable** 文件夹，或者脚本不显示：在 Scriptable 首页点右上角 **+** 创建空白脚本，从 GitHub JS 页面复制完整源码粘贴进去，将脚本命名为 `Sibionics_AppleHealth_OneTap`，保存。该方式不依赖 iCloud。
-
-> `.scriptable` JSON 包的结构符合公开格式，但 iOS 文件类型关联可能因下载/分享路径失败。为了兼容性，当前推荐直接安装 `.js` 文件。参考 [Scriptable 官方说明](https://docs.scriptable.app/importmodule/) 和 [社区导入说明](https://github.com/supermamon/scriptable-scripts/blob/master/docs/importing.md)。
-
-## 配置苹果健康写入（只需要一次）
-
-安装 JS 之后按 [SHORTCUT_SETUP.md](./SHORTCUT_SETUP.md) 配置快捷指令。**仅安装 Scriptable 脚本不会把数据写进 Apple 健康。**
-
-## 测试 CSV 和解析成功提示（v1.1）
-
-下载三条测试 CSV 到 iPhone「文件」App 后，点击 Scriptable 中的 `Sibionics_AppleHealth_OneTap` 并选择 CSV，**v1.1 会弹出“血糖文件解析成功”**，显示识别条数与前三条。原始 XLSX 也同样能显示。
-
-如果仅选文件后没有显示任何内容，说明手机上仍在运行旧版 v1.0；请从上方 GitHub Raw 重新下载 `.js`，在「文件 → iCloud 云盘 → Scriptable」替换同名脚本（或重新复制代码），再打开 Scriptable 测试。
-
-**解析提示不是导入苹果健康的凭据**，真正写入必须运行苹果快捷指令的「记录健康样本」动作。不要把含实际个人血糖数据的 CSV/XLSX 推到公开 GitHub。
-
-## 以后怎么用
-
-**首次配置**：先安装最新 [JS 脚本](./Sibionics_AppleHealth_OneTap.js)，并在苹果快捷指令 App 中按 [完整图文操作指南](./SHORTCUT_SETUP.md) 创建名为 `硅基血糖写入` 的快捷指令。
-
-**以后每日使用**：硅基轻享导出原始 XLSX → 打开 Scriptable → 运行 `Sibionics_AppleHealth_OneTap` → 选择 XLSX → 点击“调用苹果健康写入” → 系统跳转快捷指令并按 mmol/L 记录血糖。无需 CSV 转换或手动单位换算。
-
-**注意**：只有苹果快捷指令完整执行“记录健康样本”并回传 `COMMIT`，脚本才会登记本地台账；如写入中途失败，不能假设整个批次已写成功，重试前先核对 Apple 健康中的部分记录。
-
-## 格式与隐私
-
-- XLSX：第一张工作表 A 列为“血糖时间”，B 列为“血糖值”，数值默认 **mmol/L**；需有这两个中文表头。
-- CSV：两列时间和血糖值；可保留表头，支持 `YYYY/MM/DD HH:mm` 或 `YYYY.MM.DD at HH:mm:ss` 时间。
-- 仅文件名明确含 `_mgdL_` 的先前转换版 CSV 才会按 mg/dL 换算；不要对未标记的 mg/dL CSV 直接导入。
-- 解析脚本本身无网络请求、不上传任何血糖记录；导入台账保存在 Scriptable 本地目录。**不要把自己的 XLSX/CSV、台账或截图推送到公开 GitHub**。
-
-## 重要限制
-
-- 首次只建议写入 3 条并核对**测量时刻与单位**；台账只知自己写过什么，不能直接读取 Apple 健康中其他应用写入的历史记录。
-- 如果 Health 写入循环半途失败，本地台账可能尚未提交；再次运行前先核对并清理已写入的部分，防止重复。
-- iPhone 处于不同于测量时的时区时，日期文本需要留意时差。
-- 免费开源源代码在此，但未附加开源许可证；如需对外分发衍生作品应另行确定授权。
-
-## 文件
-
-- `Sibionics_AppleHealth_OneTap.js`：Scriptable 离线解析器。
-- `SHORTCUT_SETUP.md`：首次在苹果快捷指令 App 中搭建 HealthKit 写入动作的步骤。
-
-兼容性参考：[Scriptable 文档](https://docs.scriptable.app/) · [Scriptable 文件导入说明](https://github.com/supermamon/scriptable-scripts/blob/master/docs/importing.md)
+**隐私**：仓库中不含真实血糖记录或用户上传的 Excel。签名过程仅处理快捷指令动作结构。
