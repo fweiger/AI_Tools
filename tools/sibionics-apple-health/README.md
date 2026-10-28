@@ -24,6 +24,14 @@
 
 安装 JS 之后按 [SHORTCUT_SETUP.md](./SHORTCUT_SETUP.md) 配置快捷指令。**仅安装 Scriptable 脚本不会把数据写进 Apple 健康。**
 
+## 测试 CSV 和解析成功提示（v1.1）
+
+下载三条测试 CSV 到 iPhone「文件」App 后，点击 Scriptable 中的 `Sibionics_AppleHealth_OneTap` 并选择 CSV，**v1.1 会弹出“血糖文件解析成功”**，显示识别条数与前三条。原始 XLSX 也同样能显示。
+
+如果仅选文件后没有显示任何内容，说明手机上仍在运行旧版 v1.0；请从上方 GitHub Raw 重新下载 `.js`，在「文件 → iCloud 云盘 → Scriptable」替换同名脚本（或重新复制代码），再打开 Scriptable 测试。
+
+**解析提示不是导入苹果健康的凭据**，真正写入必须运行苹果快捷指令的「记录健康样本」动作。不要把含实际个人血糖数据的 CSV/XLSX 推到公开 GitHub。
+
 ## 以后怎么用
 
 硅基轻享导出 **原始 XLSX** → 运行 iPhone 快捷指令「硅基血糖导入」→ 选 XLSX → 核对写入结果。**不必手工转 CSV、不必把血糖换算成 mg/dL**。
