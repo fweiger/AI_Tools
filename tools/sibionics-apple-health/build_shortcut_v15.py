@@ -149,19 +149,19 @@ for forbidden in ('KVW7X9', '2026/10/27', '2026/10/28', '22:03:00|5.1'):
     assert forbidden not in str(original)
 
 unsigned=plistlib.dumps(original,fmt=plistlib.FMT_BINARY,sort_keys=False)
-(ROOT/'Sibionics_v14_writer_unsigned.shortcut').write_bytes(unsigned)
-(ROOT/'Sibionics_v14_writer_source.plist').write_bytes(plistlib.dumps(original,fmt=plistlib.FMT_XML,sort_keys=False))
+(ROOT/'Sibionics_v15_writer_unsigned.shortcut').write_bytes(unsigned)
+(ROOT/'Sibionics_v15_writer_source.plist').write_bytes(plistlib.dumps(original,fmt=plistlib.FMT_XML,sort_keys=False))
 
 # Sign with a third-party service; only action definitions are sent, not CGM records.
-boundary='----SibionicsV14'+uuid.uuid4().hex
-payload=('--'+boundary+'\r\nContent-Disposition: form-data; name="file"; filename="Sibionics_v14.shortcut"\r\nContent-Type: application/octet-stream\r\n\r\n').encode()+unsigned+('\r\n--'+boundary+'--\r\n').encode()
+boundary='----SibionicsV15'+uuid.uuid4().hex
+payload=('--'+boundary+'\r\nContent-Disposition: form-data; name="file"; filename="Sibionics_v15.shortcut"\r\nContent-Type: application/octet-stream\r\n\r\n').encode()+unsigned+('\r\n--'+boundary+'--\r\n').encode()
 request=urllib.request.Request('https://sign.shortcuty.app/api/v1/sign',data=payload,headers={'Content-Type':'multipart/form-data; boundary='+boundary,'User-Agent':'SiBionics-AppleHealth/1.5'},method='POST')
 with urllib.request.urlopen(request,timeout=35) as response:
     signed=response.read()
 assert signed[:4]==b'AEA1' and len(signed)>9000
-(ROOT/'Sibionics_v14_writer_signed.shortcut').write_bytes(signed)
+(ROOT/'Sibionics_v15_writer_signed.shortcut').write_bytes(signed)
 
-manifest={'version':'1.5','name':SHORTCUT_NAME,'script':SCRIPT_NAME,'protocol':'SIBIONICS-CGM-V14',
+manifest={'version':'1.5','name':SHORTCUT_NAME,'script':SCRIPT_NAME,'protocol':'SIBIONICS-CGM-V15',
           'action_count':len(acts),'source_time_offset':'+08:00','commit_count_guard':True,
           'signed_size':len(signed),'sha256':hashlib.sha256(signed).hexdigest(),
           'source_contains_private_data':False,'phone_healthkit_validation':False}
