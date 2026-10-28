@@ -1,3 +1,14 @@
+# 硅基轻享 → 苹果健康（v1.5 最新配套）
+
+**推荐两份独立新文件，不再下载 v1.4：**
+[Scriptable JS v1.5](<https://raw.githubusercontent.com/fweiger/test/cd8fbf67a40cddaabdffead823ed5ed752c1fcc8/tools/sibionics-apple-health/Sibionics_AppleHealth_OneTap1.5.js>) · [苹果快捷指令 v1.5](<https://raw.githubusercontent.com/fweiger/test/cd8fbf67a40cddaabdffead823ed5ed752c1fcc8/tools/sibionics-apple-health/%E7%A1%85%E5%9F%BA%E8%A1%80%E7%B3%96%E5%86%99%E5%85%A5v1.5.shortcut>)
+
+[完整安装和旧版 3 条待处理批次恢复说明](./README_V15.md)
+
+> 新版本一次最多 200 条，当前真实 XLSX 的 158 条可整批提交。不要删除旧台账。请用固定提交链接避免旧版本缓存。iPhone HealthKit 实机写入尚未验证。
+
+---
+
 # 推荐版本：v1.5（全新文件名，避免 1.4 缓存）
 
 **[下载 Scriptable JS v1.5](./Sibionics_AppleHealth_OneTap1.5.js)** · **[下载苹果快捷指令 v1.5](./%E7%A1%85%E5%9F%BA%E8%A1%80%E7%B3%96%E5%86%99%E5%85%A5v1.5.shortcut)**
