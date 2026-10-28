@@ -5,7 +5,7 @@
 // No Internet access, external libraries, uploads or unit conversion needed for SiBionics XLSX.
 // Two modes: 1) file chooser & prepare records; 2) COMMIT\nrecords mark fully imported samples.
 
-const SCRIPT_VERSION = '1.0';
+const SCRIPT_VERSION = '1.1';
 const MAX_PER_RUN = 400; // Limit each HealthKit write batch for reliability.
 const FIRST_RUN_TEST = 3; // Safe first-run import; after success subsequent runs use up to 400.
 const LEDGER_NAME = 'sibionics_health_imported_v1.json';
@@ -243,8 +243,19 @@ function getRecords(rows,filename) {
   if(!result.size) fail('没有找到血糖数据。');
   return [...result].sort((a,b)=>a[0].localeCompare(b[0]));
 }
+async function showStandalonePreview(name, totalCount, pendingCount, selection) {
+  const preview = selection.slice(0,3).map(([t,v])=>t+'  '+v+' mmol/L').join('\n');
+  const alert = new Alert();
+  alert.title = '血糖文件解析成功';
+  alert.message = '文件：'+name+'\n识别记录：'+totalCount+' 条\n尚未登记：'+pendingCount+' 条'
+    +(selection.length ? '\n本批可交给快捷指令：'+selection.length+' 条\n\n样例：\n'+preview : '\n无需新增记录')
+    +'\n\n当前仅预览，还没有写入苹果健康。写入需运行苹果快捷指令。';
+  alert.addAction('确定');
+  await alert.presentAlert();
+}
 async function main() {
   const input=args.shortcutParameter;
+  const standalone = input===undefined || input===null || input==='';
   if(typeof input==='string' && input.startsWith('COMMIT\n')) {
     const rows=input.slice(7).trim().split(/\r?\n/).filter(Boolean);
     const ledger=loadLedger();
@@ -285,6 +296,7 @@ async function main() {
     return false;
   });
   const selected=pending.slice(0, fm.fileExists(ledgerPath)?MAX_PER_RUN:FIRST_RUN_TEST);
+  if(standalone) await showStandalonePreview(name, all.length, pending.length, selected);
   if(selected.length===0) {Script.setShortcutOutput('EMPTY');Script.complete();return;}
   // ISO-style local wall time: Shortcuts must interpret this text as LOCAL date, not UTC.
   Script.setShortcutOutput(selected.map(([t,v])=>t+'|'+v).join('\n'));
