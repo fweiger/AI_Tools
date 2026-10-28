@@ -69,6 +69,10 @@ precall=action('dk.simonbs.Scriptable.ParameterizedRunScriptIntent',{
 newline=copy.deepcopy(old[1]);newline_uid=newline['WFWorkflowActionParameters']['UUID']
 newline['WFWorkflowActionParameters']['text']=ref(pre_uid_script,'Output')
 newline['WFWorkflowActionParameters']['CustomOutputName']='血糖记录列表'
+# Capture the exact number of rows delivered by Scriptable; COMMIT validates this count.
+count_uid=uid()
+count=action('is.workflow.actions.count',{'UUID':count_uid,'WFCountType':'Items',
+      'Input':ref(newline_uid,'血糖记录列表'),'WFInput':ref(newline_uid,'血糖记录列表')})
 loop=copy.deepcopy(old[2]);loop['WFWorkflowActionParameters']['WFInput']=ref(newline_uid,'血糖记录列表')
 sep=copy.deepcopy(old[3]);sep_uid=sep['WFWorkflowActionParameters']['UUID']
 sep['WFWorkflowActionParameters']['WFTextSeparator']='Custom'
@@ -97,15 +101,24 @@ endloop=copy.deepcopy(old[9]);
 assert endloop['WFWorkflowActionParameters']['GroupingIdentifier']==loop['WFWorkflowActionParameters']['GroupingIdentifier']
 
 # STEP 5. Only after entire HealthKit repeat finished (not cancelled/failed), write a batch receipt.
-committext=literal_with_attachment('COMMIT|',cb_uid,'Clipboard','批次成功回执')
-commit_uid=committext['WFWorkflowActionParameters']['UUID']
+commit_uid=uid()
+committext=action('is.workflow.actions.gettext', {
+    'UUID':commit_uid,'CustomOutputName':'批次成功回执',
+    'WFTextActionText':{'WFSerializationType':'WFTextTokenString','Value':{
+       'string':'COMMIT|\ufffc|\ufffc',
+       'attachmentsByRange':{
+         '{7, 1}':{'OutputUUID':cb_uid,'OutputName':'Clipboard','Type':'ActionOutput'},
+         '{9, 1}':{'OutputUUID':count_uid,'OutputName':'Count','Type':'ActionOutput'}
+       }
+    }}
+})
 receipt_uid=uid()
 receipt=action('dk.simonbs.Scriptable.ParameterizedRunScriptIntent',{
   'UUID':receipt_uid,'fileName':SCRIPT_NAME,
   'parameter':ref(commit_uid,'批次成功回执'),'ShowWhenRun':False,'runInApp':False})
 show=action('is.workflow.actions.showresult',{'UUID':uid(),'Text':ref(receipt_uid,'Output')})
 
-acts=[clipboard,pretext,precall,newline,loop,sep,col1,col2,parse_date,health,endloop,committext,receipt,show]
+acts=[clipboard,pretext,precall,newline,count,loop,sep,col1,col2,parse_date,health,endloop,committext,receipt,show]
 original['WFWorkflowActions']=acts
 original['WFWorkflowIcon']={'WFWorkflowIconStartColor':4282601983,'WFWorkflowIconGlyphNumber':61696}
 original['WFWorkflowImportQuestions']=[]
@@ -125,12 +138,12 @@ search(original)
 assert all(x in set(all_ids) for x in refs), sorted(set(refs)-set(all_ids))
 assert [a['WFWorkflowActionIdentifier'] for a in acts].count('is.workflow.actions.health.quantity.log')==1
 assert [a['WFWorkflowActionIdentifier'] for a in acts].count('dk.simonbs.Scriptable.ParameterizedRunScriptIntent')==2
-assert acts[9]['WFWorkflowActionParameters']['WFQuantitySampleQuantity']['Value']['Unit']=='mmol/L'
-assert acts[12]['WFWorkflowActionParameters']['fileName']==acts[2]['WFWorkflowActionParameters']['fileName']==SCRIPT_NAME
+assert acts[10]['WFWorkflowActionParameters']['WFQuantitySampleQuantity']['Value']['Unit']=='mmol/L'
+assert acts[13]['WFWorkflowActionParameters']['fileName']==acts[2]['WFWorkflowActionParameters']['fileName']==SCRIPT_NAME
 assert acts[0]['WFWorkflowActionIdentifier']=='is.workflow.actions.getclipboard'
-assert len(acts)==14
+assert len(acts)==15
 assert acts[2]['WFWorkflowActionParameters']['parameter']['Value']['OutputUUID']==pre_uid
-assert acts[12]['WFWorkflowActionParameters']['parameter']['Value']['OutputUUID']==commit_uid
+assert acts[13]['WFWorkflowActionParameters']['parameter']['Value']['OutputUUID']==commit_uid
 # No source CGM data goes into a signed shortcut.
 for forbidden in ('KVW7X9', '2026/10/27', '2026/10/28', '22:03:00|5.1'):
     assert forbidden not in str(original)
@@ -149,7 +162,7 @@ assert signed[:4]==b'AEA1' and len(signed)>9000
 (ROOT/'Sibionics_v14_writer_signed.shortcut').write_bytes(signed)
 
 manifest={'version':'1.4','name':SHORTCUT_NAME,'script':SCRIPT_NAME,'protocol':'SIBIONICS-CGM-V14',
-          'action_count':len(acts),'source_time_offset':'+08:00',
+          'action_count':len(acts),'source_time_offset':'+08:00','commit_count_guard':True,
           'signed_size':len(signed),'sha256':hashlib.sha256(signed).hexdigest(),
           'source_contains_private_data':False,'phone_healthkit_validation':False}
 (ROOT/'manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2))
